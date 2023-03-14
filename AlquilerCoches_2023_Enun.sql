@@ -66,8 +66,12 @@ create table lineas_factura(
 
 create or replace procedure alquilar(arg_NIF_cliente varchar,
   arg_matricula varchar, arg_fecha_ini date, arg_fecha_fin date) is
+  dias_negativos exception;
+  PRAGMA EXCEPTION_INIT (dias_negativos, -20003);
 begin
-  null;
+  if arg_fecha_ini > arg_fecha_fin then
+    raise_application_error(-20003,'El numero de dias será mayor que cero');
+  end if;
 end;
 /
 
@@ -308,6 +312,8 @@ begin
   end;
  
 end;
+
+
 /
 
 set serveroutput on
