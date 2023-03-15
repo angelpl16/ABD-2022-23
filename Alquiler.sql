@@ -13,6 +13,12 @@ create or replace procedure alquilar(arg_NIF_cliente varchar,
   
   num_dias integer;
   cliente_existe boolean := false;
+  vehiculo_existe boolean := false;
+  
+  coste_alquiler integer;
+  llenado_deposito integer;
+  coste_final integer;
+  num_fact integer;
 
   --INTO select Punto 2
   v_id_modelo vehiculos.id_modelo%type;
@@ -59,6 +65,9 @@ begin
     into v_fecha_ini,v_fecha_fin
     from vehiculos natural join reservas
     where arg_matricula = matricula;
+    
+    vehiculo_existe := true;
+    
 
     if (arg_fecha_ini < v_fecha_fin) or (arg_fecha_fin > v_fecha_ini) or (arg_fecha_ini < v_fecha_ini and arg_fecha_fin >
     v_fecha_fin) or (arg_fecha_ini > v_fecha_ini and arg_fecha_fin < v_fecha_fin) then
@@ -102,13 +111,35 @@ begin
     Podría haberse añadido al superar los controles
    */
  
+ -- PASO 5
+    /*Como observarán en el GIT he podido comenzar a realizar tarde la practica.
+    De cara a la retroalimentacion, no entiendo lo de la fecha final cerrada. Siempre se pasa valor de cuando va a acabar, ¿no?
+    Nunca debería de dar el campo null. Hasta donde yo entiendo.
+    Gracias de antemano por la atención
+    */
+    coste_alquiler:=num_dias*v_precio_diario;
+    llenado_deposito:=v_capacidad_deposito*v_precio_litro;
+    coste_final:=coste_alquiler+llenado_deposito;
+    num_fact:=seq_num_fact.currval+1;
+    
+    insert into facturas (nroFactura,importe,cliente	) values (num_fact,coste_final,arg_NIF_cliente);
+    insert into lineas_factura (nroFactura,concepto,importe) values (num_fact,num_dias || ' dias de alquiler del modelo ' || v_id_modelo,coste_alquiler);
+    insert into lineas_factura (nrofactura,concepto,importe) values (num_fact,'Deposito lleno de ' || v_capacidad_deposito || ' litros de ' || v_tipo_combustible,llenado_deposito);
+    
+    
+ 
+ 
    EXCEPTION
     WHEN no_data_found THEN 
         rollback;
-        IF cliente_existe = true THEN
+        IF vehiculo_existe = false THEN
             raise_application_error(-20002, 'Vehiculo inexistente');
-        ELSE
+        ELSIF cliente_existe = false THEN
             raise_application_error(-20001, 'Cliente inexistente');
         END IF;
+    
 
 end;
+
+
+      
